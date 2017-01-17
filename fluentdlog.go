@@ -14,21 +14,20 @@ import (
 
 //// CONFIG ////
 const (
-	LOG_ALL_BODIES      = 0
 	LOG_BODIES_ON_ERROR = 1
 	LOG_NO_BODY         = 2
+	LOG_ALL_BODIES      = 3
 )
 
 type FluentdLoggerConfig struct {
-	Host              string
-	Port              int
-	Env               string
-	Tag               string
-	DropSize          int
-	MaxBodyLogSize    int
-	BodyLogPolicy     int
-	RetryInterval     float64
-	FieldsToObfuscate []string
+	Host           string
+	Port           int
+	Env            string
+	Tag            string
+	DropSize       int
+	MaxBodyLogSize int
+	BodyLogPolicy  int
+	RetryInterval  float64
 }
 
 //// Log formatting types ////
@@ -96,6 +95,10 @@ func NewLogForwardingQueue(fluentdURL string, fluentdEnv string, bodyLogPolicy i
 	}
 }
 
+func normalizeHeader(in string) (out string) {
+	return strings.ToLower(strings.Replace(in, "-", "_", -1))
+}
+
 func (q *LogForwardingQueue) formatFluentdPayload(logEntry *Log) (payload []byte, err error) {
 	// Compute the size of request headers and flatten the header values
 	requestHeaderSize := 0
@@ -105,7 +108,7 @@ func (q *LogForwardingQueue) formatFluentdPayload(logEntry *Log) (payload []byte
 		for _, v := range value {
 			requestHeaderSize += len(v)
 		}
-		requestHeaders[name] = strings.Join(value, ",")
+		requestHeaders[normalizeHeader(name)] = strings.Join(value, ",")
 	}
 
 	responseHeaderSize := 0
@@ -115,7 +118,7 @@ func (q *LogForwardingQueue) formatFluentdPayload(logEntry *Log) (payload []byte
 		for _, v := range value {
 			responseHeaderSize += len(v)
 		}
-		responseHeaders[name] = strings.Join(value, ",")
+		responseHeaders[normalizeHeader(name)] = strings.Join(value, ",")
 	}
 
 	// Let's parse the request and response objects and put that in a JSON-friendly map
@@ -143,7 +146,7 @@ func (q *LogForwardingQueue) formatFluentdPayload(logEntry *Log) (payload []byte
 			HeaderSize: int(responseHeaderSize),
 			Content: HttpContent{
 				Size:     logEntry.responseContentLength,
-				MimeType: responseHeaders["Content-Type"],
+				MimeType: responseHeaders["content_type"],
 				Content:  logEntry.responseBody,
 			},
 		},
@@ -168,9 +171,6 @@ func (q *LogForwardingQueue) run() {
 			continue
 		}
 
-		log.Println("Forwarding this log line to Fluentd:", q.fluentdURL)
-		log.Println(string(payload))
-
 		// Let's forward the log line to fluentd
 		_, err = http.Post(q.fluentdURL, "application/json", bytes.NewBuffer(payload))
 		if err != nil {
@@ -191,6 +191,24 @@ func (w bodyLogWriter) Write(b []byte) (int, error) {
 }
 
 func New(conf FluentdLoggerConfig) gin.HandlerFunc {
+	// Parse configuration, apply default arguments
+	// (Host and Port are mandatory)
+	if conf.BodyLogPolicy == 0 {
+		conf.BodyLogPolicy = LOG_NO_BODY
+	}
+
+	if conf.Tag == "" {
+		conf.Tag = "gin.requests"
+	}
+
+	if conf.DropSize == 0 {
+		conf.DropSize = 1000
+	}
+
+	if conf.RetryInterval == 0 {
+		conf.RetryInterval = 30.0
+	}
+
 	// Apply configuration
 	fluentdURL := fmt.Sprintf("http://%s:%d/%s", conf.Host, conf.Port, conf.Tag)
 

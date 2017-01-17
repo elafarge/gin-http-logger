@@ -11,15 +11,11 @@ func main() {
 	r := gin.Default()
 
 	fdc := fluentdLogger.FluentdLoggerConfig{
-		Host:              "localhost",
-		Port:              13713,
-		Env:               "etienne-test",
-		Tag:               "gin.requests",
-		DropSize:          10000,
-		RetryInterval:     30,
-		FieldsToObfuscate: nil,
-		MaxBodyLogSize:    10000,
-		BodyLogPolicy:     fluentdLogger.LOG_ALL_BODIES,
+		Host:          "localhost",
+		Port:          13713,
+		Env:           "etienne-test",
+		Tag:           "gin.requests",
+		BodyLogPolicy: fluentdLogger.LOG_ALL_BODIES,
 	}
 
 	r.Use(fluentdLogger.New(fdc))
