@@ -1,6 +1,8 @@
 package main
 
 import (
+	"errors"
+
 	fluentdLogger "github.com/Dreem-Devices/ginfluentd"
 	"github.com/gin-gonic/gin"
 )
@@ -26,6 +28,14 @@ func main() {
 		c.JSON(200, gin.H{
 			"message": "hello dear",
 		})
+	})
+
+	// Test that errors are caught
+	r.GET("/test_error", func(c *gin.Context) {
+		c.JSON(500, gin.H{
+			"message": "Internal error occured",
+		})
+		c.Error(errors.New("Other service not available!"))
 	})
 
 	r.POST("/test", func(c *gin.Context) {

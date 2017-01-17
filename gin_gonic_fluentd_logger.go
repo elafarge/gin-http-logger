@@ -61,6 +61,7 @@ type FluentdLogLine struct {
 	Time          int64            `json:"time"`
 	Request       RequestLogEntry  `json:"request"`
 	Response      ResponseLogEntry `json:"response"`
+	Errors        string           `json:"errors"`
 }
 
 //// Log formatting and forwarding mechanics ////
@@ -135,6 +136,7 @@ func (q *LogForwardingQueue) formatFluentdPayload(logEntry *Log) (payload []byte
 				Content:  logEntry.requestBody,
 			},
 		},
+		Errors: logEntry.context.Errors.String(),
 		Response: ResponseLogEntry{
 			Status:     logEntry.context.Writer.Status(),
 			Headers:    responseHeaders,
