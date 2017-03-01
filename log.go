@@ -19,7 +19,7 @@ type RequestLogEntry struct {
 
 // Response log format
 type ResponseLogEntry struct {
-	Status     int               `json:"status_code"`
+	Status     int               `json:"status"`
 	Headers    map[string]string `json:"headers"`
 	HeaderSize int               `json:"headers_size"`
 	Content    HttpContent       `json:"content"`
