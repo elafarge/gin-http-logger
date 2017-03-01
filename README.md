@@ -21,7 +21,16 @@ Usage
 Like any other Gin-Gonic middleware:
 
 ```golang
-r := gin.Default()
+import (
+  // ...
+  fluentdLogger "github.com/elafarge/ginfluentd"
+  "github.com/gin-gonic/gin"
+  // ...
+)
+
+// ...
+
+  r := gin.Default()
 
 	fdc := httpLogger.FluentdLoggerConfig{
 		Host:           "localhost",
