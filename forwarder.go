@@ -51,7 +51,7 @@ func (q *LogForwardingQueue) formatFluentdPayload(logEntry *Log) (payload []byte
 	// Let's parse the request and response objects and put that in a JSON-friendly map
 	logPayload := FluentdLogLine{
 		Env:           q.fluentdEnv,
-		TimeStarted:   logEntry.startDate.Format("2006-01-02T15:04:05.999+0200"),
+		TimeStarted:   logEntry.startDate.Format("2006-01-02T15:04:05.999+0000"),
 		ClientAddress: logEntry.context.ClientIP(),
 		Time:          int64(logEntry.latency.Nanoseconds() / 1000),
 		Request: RequestLogEntry{
