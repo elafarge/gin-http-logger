@@ -35,15 +35,15 @@ func (l *LeechedReadCloser) Read(b []byte) (n int, err error) {
 
 		// Let's reconcatenate what we've already read with the rest of the request
 		// in a MultiReader...
-		mr := io.MultiReader(bytes.NewReader(l.data[l.loggedBytesCount:n]), l.originalReadCloser)
+		mr := io.MultiReader(bytes.NewReader(l.data[l.loggedBytesCount:l.loggedBytesCount+int64(n)]), l.originalReadCloser)
 
 		l.loggedBytesCount += int64(n)
 
 		// ... and have gin read from it !
 		return mr.Read(b)
-	} else {
-		return l.originalReadCloser.Read(b)
 	}
+
+	return l.originalReadCloser.Read(b)
 }
 
 // Calls Close() on the original ReadCloser as well as the leech
