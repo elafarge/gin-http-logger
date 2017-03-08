@@ -1,7 +1,8 @@
 Gin-Gonic HTTP log forwarder
 ============================
 
-A Gin-Gonic middleware forwarding access logs over HTTP (in JSON).
+A Gin-Gonic middleware forwarding access logs over HTTP (in JSON). It can be
+used for instance to forward all your requests logs to a Fluentd HTTP listener.
 
 Features
 --------
@@ -12,7 +13,7 @@ Features
  * Memory efficient: uses the standard `io` library abstractions to limit
    what's loaded in memory, body logs are truncated to 10000 bytes by default,
    in case of connection failure with the HTTP endpoint, no more than 1000 logs
-   will be kept in memory
+   will be kept in memory. These values can be tweaked to your liking.
  * Lightweight but complete
 
 Usage
@@ -23,7 +24,7 @@ Like any other Gin-Gonic middleware:
 ```golang
 import (
   // ...
-  fluentdLogger "github.com/elafarge/ginfluentd"
+  httpLogger "github.com/elafarge/gin-http-logger"
   "github.com/gin-gonic/gin"
   // ...
 )
@@ -32,18 +33,18 @@ import (
 
   r := gin.Default()
 
-	fdc := httpLogger.FluentdLoggerConfig{
+	httpLoggerConf := httpLogger.FluentdLoggerConfig{
 		Host:           "localhost",
 		Port:           13713,
 		Env:            "etienne-kubernetes",
 		Tag:            "gin.requests",
-		BodyLogPolicy:  fluentdLogger.LOG_BODIES_ON_ERROR,
+		BodyLogPolicy:  httpLogger.LOG_BODIES_ON_ERROR,
 		MaxBodyLogSize: 50,
 		DropSize:       5,
 		RetryInterval:  5,
 	}
 
-	r.Use(fluentdLogger.New(fdc))
+	r.Use(httpLogger.New(httpLoggerConf))
 ```
 
 ### Compatible with

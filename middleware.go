@@ -1,4 +1,4 @@
-package ginfluentd
+package ginhttplogger
 
 import (
 	"log"
@@ -31,36 +31,7 @@ type FluentdLoggerConfig struct {
 	RetryInterval  time.Duration
 }
 
-func New(conf FluentdLoggerConfig) gin.HandlerFunc {
-	// Parse configuration, apply default arguments
-	// (Host and Port are mandatory)
-	if conf.BodyLogPolicy == 0 {
-		conf.BodyLogPolicy = LOG_NO_BODY
-	}
-
-	if conf.Tag == "" {
-		conf.Tag = "gin.requests"
-	}
-
-	if conf.DropSize == 0 {
-		conf.DropSize = 1000
-	}
-
-	if conf.MaxBodyLogSize == 0 {
-		conf.MaxBodyLogSize = 10000
-	}
-
-	if conf.RetryInterval == 0 {
-		conf.RetryInterval = 10 * time.Second
-	}
-
-	// Apply configuration
-	logQueue := NewLogForwardingQueue(conf)
-
-	// Run the log-forwarding goroutine
-	go logQueue.run()
-
-	// return the middleware function
+func buildLoggingMiddleware(conf FluentdLoggerConfig, logQueue LogForwardingQueue) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var requestBody, responseBody string
 		var responseBodyLeech *LeechedGinResponseWriter
@@ -122,9 +93,41 @@ func New(conf FluentdLoggerConfig) gin.HandlerFunc {
 		}
 
 		select {
-		case logQueue.Intake <- logEntry:
+		case logQueue.intake() <- logEntry:
 		default:
-			log.Println("[WARNING][fluentd-middleware] Impossible to forward requests into log queue, channel full.")
+			log.Println("[WARNING][http-logging-middleware] Impossible to forward requests into log queue, channel full.")
 		}
 	}
+}
+
+func New(conf FluentdLoggerConfig) gin.HandlerFunc {
+	// Parse configuration, apply default arguments
+	// (Host and Port are mandatory)
+	if conf.BodyLogPolicy == 0 {
+		conf.BodyLogPolicy = LOG_NO_BODY
+	}
+
+	if conf.Tag == "" {
+		conf.Tag = "gin.requests"
+	}
+
+	if conf.DropSize == 0 {
+		conf.DropSize = 1000
+	}
+
+	if conf.MaxBodyLogSize == 0 {
+		conf.MaxBodyLogSize = 10000
+	}
+
+	if conf.RetryInterval == 0 {
+		conf.RetryInterval = 10 * time.Second
+	}
+
+	// Apply configuration
+	logQueue := NewHttpLogForwardingQueue(conf)
+
+	// Run the log-forwarding goroutine
+	go logQueue.run()
+
+	return buildLoggingMiddleware(conf, logQueue)
 }

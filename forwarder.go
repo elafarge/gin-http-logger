@@ -1,4 +1,4 @@
-package ginfluentd
+package ginhttplogger
 
 import (
 	"bytes"
@@ -7,43 +7,36 @@ import (
 	"log"
 	"net/http"
 	"time"
-
-	"github.com/gin-gonic/gin"
 )
 
-// Log formatting type to be forwarded into channel
-type Log struct {
-	context               *gin.Context
-	startDate             time.Time
-	latency               time.Duration
-	requestBody           string
-	responseHeaders       http.Header
-	responseBody          string
-	responseContentLength int64
+// Generic Interface for a queue
+type LogForwardingQueue interface {
+	run() // Log forwarding goroutine
+	intake() chan Log
 }
 
-type LogForwardingQueue struct {
-	Intake         chan Log
-	dropSize       int
-	retryInterval  time.Duration
-	fluentdURL     string
-	fluentdEnv     string
-	bodyLogPolicy  int
-	maxBodyLogSize int64
+// Definition of such a Queue that forwards logs in JSON over HTTP
+type HttpLogForwardingQueue struct {
+	Intake        chan Log
+	retryInterval time.Duration
+	fluentdURL    string
+	fluentdEnv    string
 }
 
-func NewLogForwardingQueue(conf FluentdLoggerConfig) (q *LogForwardingQueue) {
-	return &LogForwardingQueue{
-		Intake:         make(chan Log, conf.DropSize),
-		retryInterval:  conf.RetryInterval,
-		fluentdURL:     fmt.Sprintf("http://%s:%d/%s", conf.Host, conf.Port, conf.Tag),
-		fluentdEnv:     conf.Env,
-		bodyLogPolicy:  conf.BodyLogPolicy,
-		maxBodyLogSize: conf.MaxBodyLogSize,
+func NewHttpLogForwardingQueue(conf FluentdLoggerConfig) (q *HttpLogForwardingQueue) {
+	return &HttpLogForwardingQueue{
+		Intake:        make(chan Log, conf.DropSize),
+		retryInterval: conf.RetryInterval,
+		fluentdURL:    fmt.Sprintf("http://%s:%d/%s", conf.Host, conf.Port, conf.Tag),
+		fluentdEnv:    conf.Env,
 	}
 }
 
-func (q *LogForwardingQueue) formatFluentdPayload(logEntry *Log) (payload []byte, err error) {
+func (q *HttpLogForwardingQueue) intake() chan Log {
+	return q.Intake
+}
+
+func (q *HttpLogForwardingQueue) formatFluentdPayload(logEntry *Log) (payload []byte, err error) {
 	// Let's normalize our headers to match Kong's format as well as our Django logger's
 	requestHeaders, requestHeaderSize := normalizeHeaderMap(logEntry.context.Request.Header)
 	responseHeaders, responseHeaderSize := normalizeHeaderMap(logEntry.responseHeaders)
@@ -51,7 +44,7 @@ func (q *LogForwardingQueue) formatFluentdPayload(logEntry *Log) (payload []byte
 	// Let's parse the request and response objects and put that in a JSON-friendly map
 	logPayload := FluentdLogLine{
 		Env:           q.fluentdEnv,
-		TimeStarted:   logEntry.startDate.Format("2006-01-02T15:04:05.999+0000"),
+		TimeStarted:   logEntry.startDate.Format("2006-01-02T15:04:05.999+0100"),
 		ClientAddress: logEntry.context.ClientIP(),
 		Time:          int64(logEntry.latency.Nanoseconds() / 1000),
 		Request: RequestLogEntry{
@@ -82,7 +75,7 @@ func (q *LogForwardingQueue) formatFluentdPayload(logEntry *Log) (payload []byte
 	return json.Marshal(logPayload)
 }
 
-func (q *LogForwardingQueue) run() {
+func (q *HttpLogForwardingQueue) run() {
 	// Forwards payloads asynchronously
 	for {
 		logEntry := (<-q.Intake)

@@ -1,4 +1,4 @@
-package ginfluentd
+package ginhttplogger
 
 import (
 	"net/http"

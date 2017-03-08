@@ -1,4 +1,4 @@
-package ginfluentd
+package ginhttplogger
 
 import (
 	"bytes"
@@ -14,6 +14,7 @@ type LeechedReadCloser struct {
 	data             []byte
 	maxBodyLogSize   int64
 	loggedBytesCount int64
+	afterLogReader   io.Reader
 }
 
 func NewLeechedReadCloser(source io.ReadCloser, maxSize int64) *LeechedReadCloser {
@@ -35,15 +36,12 @@ func (l *LeechedReadCloser) Read(b []byte) (n int, err error) {
 
 		// Let's reconcatenate what we've already read with the rest of the request
 		// in a MultiReader...
-		mr := io.MultiReader(bytes.NewReader(l.data[l.loggedBytesCount:l.loggedBytesCount+int64(n)]), l.originalReadCloser)
+		l.afterLogReader = io.MultiReader(bytes.NewReader(l.data[l.loggedBytesCount:l.loggedBytesCount+int64(n)]), l.originalReadCloser)
 
 		l.loggedBytesCount += int64(n)
-
-		// ... and have gin read from it !
-		return mr.Read(b)
 	}
 
-	return l.originalReadCloser.Read(b)
+	return l.afterLogReader.Read(b)
 }
 
 // Calls Close() on the original ReadCloser as well as the leech

@@ -1,29 +1,30 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"log"
 
-	fluentdLogger "github.com/Dreem-Devices/ginfluentd"
+	httpLogger "github.com/elafarge/gin-http-logger"
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
 	r := gin.Default()
 
-	fdc := fluentdLogger.FluentdLoggerConfig{
+	fdc := httpLogger.FluentdLoggerConfig{
 		Host:           "localhost",
 		Port:           13713,
 		Env:            "etienne-test",
 		Tag:            "gin.requests",
-		BodyLogPolicy:  fluentdLogger.LOG_BODIES_ON_ERROR,
-		MaxBodyLogSize: 50,
+		BodyLogPolicy:  httpLogger.LOG_BODIES_ON_ERROR,
+		MaxBodyLogSize: 1000,
 		DropSize:       5,
 		RetryInterval:  5,
 	}
 
-	r.Use(fluentdLogger.New(fdc))
+	r.Use(httpLogger.New(fdc))
 
 	r.GET("/test", func(c *gin.Context) {
 		c.JSON(200, gin.H{
@@ -43,13 +44,19 @@ func main() {
 		c.Writer.Header().Set("X-Custom-Delirium", "Yo")
 		var data map[string]string
 
+		var buf bytes.Buffer
+		buf.ReadFrom(c.Request.Body)
+		log.Printf("BODY: \n ----- \n\n%s\n\n", buf.String())
+
 		if err := json.NewDecoder(c.Request.Body).Decode(&data); err != nil {
 			log.Printf("Error decoding body to JSON: %s", err)
+			c.JSON(500, gin.H{"message": "error decoding JSON payload"})
+		} else {
+			log.Printf("Body: %s", data)
+			c.JSON(201, gin.H{
+				"message": "delirium registered",
+			})
 		}
-		log.Printf("Body: %s", data)
-		c.JSON(201, gin.H{
-			"message": "delirium registered",
-		})
 	})
 
 	r.POST("/test_error", func(c *gin.Context) {

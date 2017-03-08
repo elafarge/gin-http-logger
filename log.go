@@ -1,4 +1,22 @@
-package ginfluentd
+package ginhttplogger
+
+import (
+	"net/http"
+	"time"
+
+	"github.com/gin-gonic/gin"
+)
+
+// Log structure passed through the log forwarding channel
+type Log struct {
+	context               *gin.Context
+	startDate             time.Time
+	latency               time.Duration
+	requestBody           string
+	responseHeaders       http.Header
+	responseBody          string
+	responseContentLength int64
+}
 
 // Format of a Request body and it's metadata
 type HttpContent struct {
