@@ -21,10 +21,18 @@ type LeechedReadCloser struct {
 // from a ReadCloser and returns a clone of that same reader, data included
 func NewLeechedReadCloser(source io.ReadCloser, maxSize int64) *LeechedReadCloser {
 	return &LeechedReadCloser{
-		data:               make([]byte, maxSize),
+		data:               make([]byte, 0, maxSize),
 		originalReadCloser: source,
 		maxBodyLogSize:     maxSize,
 	}
+}
+
+// GetLog returns the captured log paylaod
+func (l *LeechedReadCloser) GetLog() []byte {
+	if l.loggedBytesCount > 0 {
+		return l.data[:l.loggedBytesCount]
+	}
+	return []byte("[Empty or not read by server]")
 }
 
 // Read reads stores up to maxSize bytes and keeps on reading

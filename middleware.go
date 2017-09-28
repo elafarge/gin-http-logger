@@ -83,7 +83,7 @@ func buildLoggingMiddleware(conf AccessLoggerConfig, logQueue LogForwardingQueue
 		if conf.BodyLogPolicy == LogAllBodies || conf.BodyLogPolicy == LogBodiesOnErrors && c.Writer.Status() >= 400 {
 
 			// And parse all this to UTF-8 strings
-			requestBody = string(requestBodyLeech.data)
+			requestBody = string(requestBodyLeech.GetLog())
 			responseBody = string(responseBodyLeech.data)
 		}
 
