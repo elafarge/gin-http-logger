@@ -21,8 +21,8 @@ type Log struct {
 // HTTPContent describes the format of a Request body and it's metadata
 type HTTPContent struct {
 	Size     int64  `json:"size"`
-	MimeType string `json:"mime_type"`
-	Content  string `json:"content"`
+	MimeType string `json:"mime_type,omitempty"`
+	Content  string `json:"content,omitempty"`
 }
 
 // RequestLogEntry describes the incoming requests log format
@@ -37,8 +37,8 @@ type RequestLogEntry struct {
 
 // ResponseLogEntry describes the server response log format
 type ResponseLogEntry struct {
-	Status     int               `json:"status"`
-	Headers    map[string]string `json:"headers"`
+	Status     int               `json:"status,omitempty"`
+	Headers    map[string]string `json:"headers,omitempty"`
 	HeaderSize int               `json:"headers_size"`
 	Content    HTTPContent       `json:"content"`
 }
@@ -46,9 +46,9 @@ type ResponseLogEntry struct {
 // AccessLog describes the complete log entry format
 type AccessLog struct {
 	TimeStarted   string           `json:"@timestamp"`
-	ClientAddress string           `json:"x_client_address"`
+	ClientAddress string           `json:"x_client_address,omitempty"`
 	Time          int64            `json:"duration"`
 	Request       RequestLogEntry  `json:"request"`
 	Response      ResponseLogEntry `json:"response"`
-	Errors        string           `json:"errors"`
+	Errors        string           `json:"errors,omitempty"`
 }
