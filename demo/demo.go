@@ -73,5 +73,7 @@ func main() {
 		})
 	})
 
-	r.Run()
+	if err := r.Run(); err != nil {
+		log.Errorf("Error running webserver: %v", err)
+	}
 }

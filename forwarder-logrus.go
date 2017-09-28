@@ -33,9 +33,13 @@ func (q *LogrusLogForwardingQueue) run() {
 		payload := buildPayload(&logEntry)
 
 		// Let's forward the log line to fluentd
-		// TODO: change log level depending on the error. I like
-		// TODO: paste our request as logrus fields
-		// 2xx: debug, 3xx & 4xx: info, 5xx: error
-		q.logrusLogger.WithFields(structs.Map(payload)).Info("request processed")
+		logger := q.logrusLogger.WithFields(structs.Map(payload))
+		if payload.Response.Status < 300 {
+			logger.Debug("request processed with success")
+		} else if payload.Response.Status < 500 {
+			logger.Info("request processed")
+		} else {
+			logger.Error("request failed")
+		}
 	}
 }
