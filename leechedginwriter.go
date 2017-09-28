@@ -2,8 +2,8 @@ package ginhttplogger
 
 import "github.com/gin-gonic/gin"
 
-// An extension of gin.ResponseWriter that logs the first bytes of the response
-// body in a bytes buffer
+// LeechedGinResponseWriter is an extension of gin.ResponseWriter that logs the first bytes of the
+// response body in a bytes buffer
 type LeechedGinResponseWriter struct {
 	gin.ResponseWriter
 
@@ -12,7 +12,7 @@ type LeechedGinResponseWriter struct {
 	loggedBytesCount int64
 }
 
-// Constructs and returns such a tweaked gin.ResponseWriter
+// NewLeechedGinResponseWriter builds an returns a LeechedGinResponseWriter
 func NewLeechedGinResponseWriter(source gin.ResponseWriter, maxSize int64) (newWriter *LeechedGinResponseWriter) {
 	return &LeechedGinResponseWriter{
 		data:           make([]byte, 0, maxSize),
@@ -21,6 +21,8 @@ func NewLeechedGinResponseWriter(source gin.ResponseWriter, maxSize int64) (newW
 	}
 }
 
+// Write stores up to maxSize bites that go through the original writer while writing them on the
+// orginal writer
 func (l *LeechedGinResponseWriter) Write(b []byte) (int, error) {
 	spaceLeft := l.maxBodyLogSize - l.loggedBytesCount
 	if spaceLeft > 0 {

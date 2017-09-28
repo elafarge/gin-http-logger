@@ -19,8 +19,8 @@ func TestMiddlewareBodyLogging(t *testing.T) {
 	router := gin.New()
 
 	// Let's build our config
-	conf := FluentdLoggerConfig{
-		BodyLogPolicy:  LOG_ALL_BODIES,
+	conf := AccessLoggerConfig{
+		BodyLogPolicy:  LogAllBodies,
 		MaxBodyLogSize: 1000,
 		DropSize:       10,
 	}

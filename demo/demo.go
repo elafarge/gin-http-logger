@@ -1,31 +1,36 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
-	"log"
+
+	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 
 	httpLogger "github.com/elafarge/gin-http-logger"
-	"github.com/gin-gonic/gin"
+	formatters "github.com/elafarge/gin-http-logger/logrus-formatters"
 )
 
 func main() {
-	r := gin.Default()
+	// Let's format our stdout logs to Fluentd-compatible JSON
+	log.SetFormatter(&formatters.FluentdFormatter{"2006-01-02T15:04:05.000000000Z"})
 
-	fdc := httpLogger.FluentdLoggerConfig{
-		Host:           "localhost",
-		Port:           13713,
-		Env:            "etienne-test",
-		Tag:            "gin.requests",
-		BodyLogPolicy:  httpLogger.LOG_BODIES_ON_ERROR,
-		MaxBodyLogSize: 1000,
+	// Get rid of gin's debug logs
+	gin.SetMode(gin.ReleaseMode)
+
+	// Middleware configuration
+	r := gin.New()
+	fdc := httpLogger.AccessLoggerConfig{
+		LogrusLogger:   log.StandardLogger(),
+		BodyLogPolicy:  httpLogger.LogBodiesOnErrors,
+		MaxBodyLogSize: 100,
 		DropSize:       5,
 		RetryInterval:  5,
 	}
-
 	r.Use(httpLogger.New(fdc))
+	r.Use(gin.Recovery())
 
+	// Route configuration
 	r.GET("/test", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "hello dear",
@@ -37,16 +42,12 @@ func main() {
 		c.JSON(500, gin.H{
 			"message": "Internal error occured",
 		})
-		c.Error(errors.New("Other service not available!"))
+		c.Error(errors.New("other service not available"))
 	})
 
 	r.POST("/test", func(c *gin.Context) {
 		c.Writer.Header().Set("X-Custom-Delirium", "Yo")
 		var data map[string]string
-
-		var buf bytes.Buffer
-		buf.ReadFrom(c.Request.Body)
-		log.Printf("BODY: \n ----- \n\n%s\n\n", buf.String())
 
 		if err := json.NewDecoder(c.Request.Body).Decode(&data); err != nil {
 			log.Printf("Error decoding body to JSON: %s", err)

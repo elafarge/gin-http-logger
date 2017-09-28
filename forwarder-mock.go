@@ -4,16 +4,15 @@ import (
 	"sync"
 )
 
-// Let's mock the LogForwardingQueue to be able to read what's logged
-// Due to its minmalistic synchronization primitives, you'll have to
-// re-instantiate a queue for each request you want to test
+// MockedLogForwardingQueue is a mock class for our log forwarding queue
 type MockedLogForwardingQueue struct {
 	Intake       chan Log
 	lastLogEntry Log
 	mutex        sync.Mutex
 }
 
-func NewMockedLogForwardingQueue(conf FluentdLoggerConfig) (q *MockedLogForwardingQueue) {
+// NewMockedLogForwardingQueue creates a new MockedLogForwardingQueue
+func NewMockedLogForwardingQueue(conf AccessLoggerConfig) (q *MockedLogForwardingQueue) {
 	q = &MockedLogForwardingQueue{
 		Intake: make(chan Log, conf.DropSize),
 	}

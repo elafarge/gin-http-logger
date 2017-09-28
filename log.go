@@ -18,34 +18,33 @@ type Log struct {
 	responseContentLength int64
 }
 
-// Format of a Request body and it's metadata
-type HttpContent struct {
+// HTTPContent describes the format of a Request body and it's metadata
+type HTTPContent struct {
 	Size     int64  `json:"size"`
 	MimeType string `json:"mime_type"`
 	Content  string `json:"content"`
 }
 
-// Request log format
+// RequestLogEntry describes the incoming requests log format
 type RequestLogEntry struct {
 	Method      string            `json:"method"`
 	Path        string            `json:"path"`
 	HTTPVersion string            `json:"http_version"`
 	Headers     map[string]string `json:"headers"`
 	HeaderSize  int               `json:"headers_size"`
-	Content     HttpContent       `json:"content"`
+	Content     HTTPContent       `json:"content"`
 }
 
-// Response log format
+// ResponseLogEntry describes the server response log format
 type ResponseLogEntry struct {
 	Status     int               `json:"status"`
 	Headers    map[string]string `json:"headers"`
 	HeaderSize int               `json:"headers_size"`
-	Content    HttpContent       `json:"content"`
+	Content    HTTPContent       `json:"content"`
 }
 
-// Log format for the whole request
-type FluentdLogLine struct {
-	Env           string           `json:"fluentd_env"`
+// AccessLog describes the complete log entry format
+type AccessLog struct {
 	TimeStarted   string           `json:"@timestamp"`
 	ClientAddress string           `json:"x_client_address"`
 	Time          int64            `json:"duration"`

@@ -6,7 +6,7 @@ import (
 	"io"
 )
 
-// A wrapper around io.ReadCloser that logs the first bytes of a Request's body
+// LeechedReadCloser is a wrapper around io.ReadCloser that logs the first bytes of a Request's body
 // (in our case) into a bytes buffer
 type LeechedReadCloser struct {
 	originalReadCloser io.ReadCloser
@@ -17,6 +17,8 @@ type LeechedReadCloser struct {
 	afterLogReader   io.Reader
 }
 
+// NewLeechedReadCloser creates a readCloser which reads and stores at most maxSize bytes
+// from a ReadCloser and returns a clone of that same reader, data included
 func NewLeechedReadCloser(source io.ReadCloser, maxSize int64) *LeechedReadCloser {
 	return &LeechedReadCloser{
 		data:               make([]byte, maxSize),
@@ -25,6 +27,7 @@ func NewLeechedReadCloser(source io.ReadCloser, maxSize int64) *LeechedReadClose
 	}
 }
 
+// Read reads stores up to maxSize bytes and keeps on reading
 func (l *LeechedReadCloser) Read(b []byte) (n int, err error) {
 	spaceLeft := l.maxBodyLogSize - l.loggedBytesCount
 	if spaceLeft > 0 {
@@ -44,7 +47,7 @@ func (l *LeechedReadCloser) Read(b []byte) (n int, err error) {
 	return l.afterLogReader.Read(b)
 }
 
-// Calls Close() on the original ReadCloser as well as the leech
+// Close closes on the original ReadCloser
 func (l *LeechedReadCloser) Close() (err error) {
 	return l.originalReadCloser.Close()
 }
