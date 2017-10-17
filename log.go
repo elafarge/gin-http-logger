@@ -45,7 +45,7 @@ type ResponseLogEntry struct {
 
 // AccessLog describes the complete log entry format
 type AccessLog struct {
-	TimeStarted   string           `json:"@timestamp"`
+	TimeStarted   string           `json:"start_time"`
 	ClientAddress string           `json:"x_client_address,omitempty"`
 	Time          int64            `json:"duration"`
 	Request       RequestLogEntry  `json:"request"`
