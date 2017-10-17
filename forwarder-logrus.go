@@ -1,9 +1,9 @@
 package ginhttplogger
 
 import (
+	"encoding/json"
 	"time"
 
-	"github.com/fatih/structs"
 	"github.com/sirupsen/logrus"
 )
 
@@ -32,14 +32,27 @@ func (q *LogrusLogForwardingQueue) run() {
 		logEntry := (<-q.Intake)
 		payload := buildPayload(&logEntry)
 
+		// Let's convert our fields to their JSON counterparts before logging fields as JSON
+		payloadBytes, err := json.Marshal(payload)
+		if err != nil {
+			logrus.Errorf("Impossible to marshal log payload to JSON: %v (payload: %v)", err, payload)
+			continue
+		}
+		var payloadJSON map[string]interface{}
+		err = json.Unmarshal(payloadBytes, &payloadJSON)
+		if err != nil {
+			logrus.Errorf("Impossible to unmarshal log payload into map[string]interface{}: %v (payload: %s)", err, payloadBytes)
+			continue
+		}
+
 		// Let's forward the log line to fluentd
-		logger := q.logrusLogger.WithFields(structs.Map(payload))
+		logger := q.logrusLogger.WithFields(payloadJSON)
 		if payload.Response.Status >= 500 {
-			logger.Info("request processed")
+			logger.Info("server error")
 		} else if payload.Response.Status >= 400 {
 			logger.Warn("client error")
 		} else {
-			logger.Error("server error")
+			logger.Error("request processed")
 		}
 	}
 }

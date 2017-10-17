@@ -20,14 +20,14 @@ func main() {
 
 	// Middleware configuration
 	r := gin.New()
-	fdc := httpLogger.AccessLoggerConfig{
+	alc := httpLogger.AccessLoggerConfig{
 		LogrusLogger:   log.StandardLogger(),
 		BodyLogPolicy:  httpLogger.LogBodiesOnErrors,
 		MaxBodyLogSize: 100,
 		DropSize:       5,
 		RetryInterval:  5,
 	}
-	r.Use(httpLogger.New(fdc))
+	r.Use(httpLogger.New(alc))
 	r.Use(gin.Recovery())
 
 	// Route configuration
@@ -73,7 +73,7 @@ func main() {
 		})
 	})
 
-	if err := r.Run(); err != nil {
+	if err := r.Run(":6060"); err != nil {
 		log.Errorf("Error running webserver: %v", err)
 	}
 }
