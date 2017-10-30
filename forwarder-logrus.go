@@ -48,11 +48,11 @@ func (q *LogrusLogForwardingQueue) run() {
 		// Let's forward the log line to fluentd
 		logger := q.logrusLogger.WithFields(payloadJSON)
 		if payload.Response.Status >= 500 {
-			logger.Info("server error")
+			logger.Error("server error")
 		} else if payload.Response.Status >= 400 {
 			logger.Warn("client error")
 		} else {
-			logger.Error("request processed")
+			logger.Info("request processed")
 		}
 	}
 }
