@@ -22,7 +22,7 @@ type Log struct {
 type HTTPContent struct {
 	Size     int64  `json:"size"`
 	MimeType string `json:"mime_type,omitempty"`
-	Content  string `json:"content,omitempty"`
+	Content  string `json:"value,omitempty"`
 }
 
 // RequestLogEntry describes the incoming requests log format
