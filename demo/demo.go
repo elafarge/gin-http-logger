@@ -73,6 +73,13 @@ func main() {
 		})
 	})
 
+	r.POST("/test_form", func(c *gin.Context) {
+		c.Request.ParseMultipartForm(100)
+		log.Infoln(c.Request.Form)
+
+		c.JSON(409, gin.H{"hell": "o"})
+	})
+
 	if err := r.Run(":6060"); err != nil {
 		log.Errorf("Error running webserver: %v", err)
 	}

@@ -1,8 +1,6 @@
 package ginhttplogger
 
 import (
-	"bytes"
-	"fmt"
 	"io"
 )
 
@@ -14,7 +12,6 @@ type LeechedReadCloser struct {
 	data             []byte
 	maxBodyLogSize   int64
 	loggedBytesCount int64
-	afterLogReader   io.Reader
 }
 
 // NewLeechedReadCloser creates a readCloser which reads and stores at most maxSize bytes
@@ -39,20 +36,23 @@ func (l *LeechedReadCloser) GetLog() []byte {
 func (l *LeechedReadCloser) Read(b []byte) (n int, err error) {
 	spaceLeft := l.maxBodyLogSize - l.loggedBytesCount
 	if spaceLeft > 0 {
-		// Let's read the request into our Logger (not all of it maybe)
-		n, err := l.originalReadCloser.Read(l.data[l.loggedBytesCount:])
-		if err != nil && err != io.EOF {
-			return 0, fmt.Errorf("Error in LeechedReadCloser: %s", err)
-		}
+		// Let's read the request into our Logger (not all of it maybe), but also let's make sure that
+		// we'll be able to to copy all the content we read in l.data into b
+		n, err := l.originalReadCloser.Read(l.data[l.loggedBytesCount : l.loggedBytesCount+min(int64(len(b)), spaceLeft)])
 
-		// Let's reconcatenate what we've already read with the rest of the request
-		// in a MultiReader...
-		l.afterLogReader = io.MultiReader(bytes.NewReader(l.data[l.loggedBytesCount:l.loggedBytesCount+int64(n)]), l.originalReadCloser)
+		// And copy what was read into the original slice
+		copy(b, l.data[l.loggedBytesCount:l.loggedBytesCount+int64(n)])
 
+		// Let's not forget to increment the pointer on the currently logged amount of bytes
 		l.loggedBytesCount += int64(n)
+
+		// And return what the Read() call we did on the original ReadCloser just returned, shhhhh
+		return n, err
 	}
 
-	return l.afterLogReader.Read(b)
+	// Our leecher is full ? Nevermind, let's just call read on the original Reader. Apart from an
+	// additional level in the call stack and an if statement, we have no overhead for large bodies :)
+	return l.originalReadCloser.Read(b)
 }
 
 // Close closes on the original ReadCloser
